@@ -1,0 +1,23 @@
+# Secrets - never commit
+draftly_accessKeys.csv
+
+# Nested independent git repos (each has its own remote/history)
+/authly/
+/authly-scenarios/
+/draftly-agent-backend/
+/draftly-agent-frontend/
+/onboarding-flow-designs/
+
+# Regenerable / generated
+/graphify-out/
+.pytest_cache/
+.ruff_cache/
+__pycache__/
+*.pyc
+
+# OS / editor
+.DS_Store
+
+# Transient session / accidental files
+session-ses_f9a9.md
+--full-page
