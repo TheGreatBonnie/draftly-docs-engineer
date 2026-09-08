@@ -9,7 +9,6 @@ import {
   PageHeader,
   SearchBox,
   SelectPill,
-  Tabs,
 } from "@/components/ui";
 import { docs } from "@/lib/mock-data";
 export default function Page() {
@@ -61,7 +60,7 @@ export default function Page() {
           icon={<FileText className="h-5 w-5" />}
         />
       </div>
-      <div className="mt-4 min-w-0 grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="mt-4 min-w-0">
         <div className="min-w-0">
           <SectionTabs section="documentation" />
           <div className="my-4 flex min-w-0 flex-wrap gap-2">
@@ -154,81 +153,6 @@ export default function Page() {
                   ))}
                 </div>
               </div>
-            </div>
-          </Card>
-        </div>
-        <div className="min-w-0 space-y-4">
-          <Card>
-            <div className="flex items-center justify-between border-b border-slate-100 p-4">
-              <h3 className="font-semibold">Preview</h3>
-              <Link
-                href="/documentation/oauth-2-0-integration"
-                className="text-xs text-blue-600">
-                View full page →
-              </Link>
-            </div>
-            <div className="min-w-0 p-4">
-              <h2 className="break-words text-xl font-semibold">
-                OAuth 2.0 authentication guide
-              </h2>
-              <div className="mt-1 break-all text-xs text-slate-500">
-                docs/authentication.md
-              </div>
-              <div className="mt-4">
-                <Tabs
-                  active="Preview"
-                  items={["Preview", "Markdown", "History"]}
-                />
-              </div>
-              <div className="mt-4 rounded-xl border border-slate-200 p-4">
-                <h3 className="text-lg font-semibold">
-                  OAuth 2.0 authentication
-                </h3>
-                <p className="mt-2 text-sm leading-6 text-slate-600">
-                  Learn how to implement OAuth 2.0 with Authly, including
-                  configuration, token management, and code examples.
-                </p>
-                <h4 className="mt-5 font-semibold">In this guide</h4>
-                <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-blue-600">
-                  <li>Overview</li>
-                  <li>Prerequisites</li>
-                  <li>Implementation</li>
-                  <li>Token management</li>
-                  <li>Examples</li>
-                </ol>
-              </div>
-            </div>
-          </Card>
-          <Card className="min-w-0 p-4">
-            <h3 className="font-semibold">Document details</h3>
-            <div className="mt-4 grid grid-cols-2 gap-y-3 text-xs">
-              <span className="text-slate-500">Repository</span>
-              <span className="min-w-0 truncate">Authly</span>
-              <span className="text-slate-500">Path</span>
-              <span className="min-w-0 break-all">docs/authentication.md</span>
-              <span className="text-slate-500">Type</span>
-              <span>
-                <Badge>Guide</Badge>
-              </span>
-              <span className="text-slate-500">Status</span>
-              <span className="text-emerald-600">● Up to date</span>
-              <span className="text-slate-500">Contributors</span>
-              <span className="min-w-0 truncate">BK · JD · +2</span>
-            </div>
-          </Card>
-          <Card className="min-w-0 p-4">
-            <h3 className="font-semibold">Related documents</h3>
-            <div className="mt-3 space-y-3 text-sm">
-              {[
-                "API reference",
-                "Refresh token rotation",
-                "SDK authentication",
-              ].map((x) => (
-                <div className="flex min-w-0 justify-between gap-3" key={x}>
-                  <span className="truncate">{x}</span>
-                  <span>↗</span>
-                </div>
-              ))}
             </div>
           </Card>
         </div>

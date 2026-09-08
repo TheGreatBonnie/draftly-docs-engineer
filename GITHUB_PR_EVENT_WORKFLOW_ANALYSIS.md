@@ -13,7 +13,7 @@ Complete analysis of the GitHub Pull Request event workflow across `draftly-agen
 **Receiver**: the FastAPI route `github_webhook` (`routes/github.py:194`)
 - Verifies the HMAC SHA-256 signature (`verify_webhook_signature`, `routes/github.py`)
 - Reads `X-GitHub-Event` / `X-GitHub-Delivery`, parses the JSON body, handles `installation` inline, then calls `normalize_github(payload)` (`routes/github.py`).
-- **Route-level merged gate**: only `pull_request.*` events whose normalized `event_type` ends in `.merged` are enqueued to the runner; all other PR actions (opened/edited/closed-not-merged/synchronize) are dropped at the edge and return `"skipped, not merged"` (`routes/github.py`). Defense-in-depth — the runner gate is authoritative.
+- **Route-level PR gate**: `pull_request.*` events whose normalized `event_type` ends in `.merged` or `.opened` are enqueued to the runner; all other PR actions (edited/closed-not-merged/synchronize) are dropped at the edge and return `"skipped, not merged/opened"` (`routes/github.py`). Defense-in-depth — the runner gate is authoritative.
 
 **Normalizer**: `EventComposition.normalize_github` (`app/composition/events.py:33`) routes by payload shape:
 - `pull_request` → `PullRequestProcessor` (`events/github/pull_request.py`)
@@ -24,7 +24,7 @@ Complete analysis of the GitHub Pull Request event workflow across `draftly-agen
 
 `PullRequestProcessor.process()` returns a **`ProcessedEvent`** (`events/base.py:19`), not `GitHubPullRequestEvent`. If `action == "closed"` and `pull_request.merged` is truthy, it emits `pull_request.merged`; otherwise `pull_request.{action}` (`pull_request.py`).
 
-**Supported events at the route**: `installation` (created/deleted — special-cased inline), `issues`, `pull_request` (opened/closed/merged/updated), `release`, and `push`. Natively dispatched: `pull_request`, `issues`, `release`, and `push`. Other GitHub event types are rejected with `422` until a dedicated normalizer and workflow are registered. Note: **only merged PRs proceed past the merged gate**; non-merged PR actions are skipped.
+**Supported events at the route**: `installation` (created/deleted — special-cased inline), `issues`, `pull_request` (opened/closed/merged/updated), `release`, and `push`. Natively dispatched: `pull_request`, `issues`, `release`, and `push`. Other GitHub event types are rejected with `422` until a dedicated normalizer and workflow are registered. Note: **only merged and opened PRs proceed past the PR gate**; other PR actions are skipped.
 
 **Not handled (documented intent only)**: `synchronize`/`synchronized`, `review_requested`, `pull_request_review`, and `issue_comment` are referenced in the route docstring but are **not dispatched by `normalize_github`** and have no processor branch — `normalize_github` raises `ValueError` on unhandled payloads. The processor does not emit `pull_request.synchronize` even though the state model (`orchestration/state/documentation.py`) and tests reference it.
 
@@ -58,10 +58,10 @@ Note: **push and release events also route to the `pull_request` surface**, so b
 - `DOCUMENTATION_CHANGED` (`documentation.changed`) - `DocumentChangedProcessor` in `events/documentation/document_changed.py` (fed from sync jobs/repo webhooks, not the GitHub webhook path)
 - `DOCUMENTATION_PUBLISHED` (`documentation.published`) - `events/documentation/publish_completed.py`
 - `REVIEW_COMPLETED` (`review.completed`) - `events/documentation/review_completed.py`
-- `pull_request.merged` - emitted when a PR is closed with `merged=true`; **only merged PR events run the documentation graph** — non-merged `pull_request.*` actions are skipped by the route edge gate and the runner gate (see §1). Routed through the PR surface.
+- `pull_request.merged` - emitted when a PR is closed with `merged=true`; **merged and opened PR events run the documentation graph** — other non-merged/non-opened `pull_request.*` actions are skipped by the route edge gate and the runner gate (see §1). Routed through the PR surface.
 - `PushProcessor` - handles branch pushes via `normalize_github` (routes to PR surface)
 
-**Idempotency**: `WorkflowRunner` performs an atomic `try_claim` on the events table before running, marking events `pending_review`/`completed`/`failed` and detecting duplicate submissions. The merged-only gate runs **before** `try_claim`, so skipped (non-merged) PR events leave no idempotency/audit/duplicate record.
+**Idempotency**: `WorkflowRunner` performs an atomic `try_claim` on the events table before running, marking events `pending_review`/`completed`/`failed` and detecting duplicate submissions. The PR gate runs **before** `try_claim`, so skipped (non-merged/non-opened) PR events leave no idempotency/audit/duplicate record.
 
 ### 4. Workflow Layer
 
@@ -336,7 +336,7 @@ WorkflowRunner → Documentation Graph (Strands GraphBuilder)
        review.completed event → ReviewCompletedProcessor
 ```
 
-Branch pushes (`push`) and `release` events also enter at the top. Because the merged-only gate is keyed on the **event prefix** (`pull_request.*`) rather than the shared `pull_request` surface, **push and release events are not affected** — pushes flow through `github_pr_workflow`, while releases flow through `github_release_workflow`.
+Branch pushes (`push`) and `release` events also enter at the top. Because the PR gate is keyed on the **event prefix** (`pull_request.*`) rather than the shared `pull_request` surface, **push and release events are not affected** — pushes flow through `github_pr_workflow`, while releases flow through `github_release_workflow`.
 
 ### Persistence Checkpoints in Flow
 
@@ -387,4 +387,4 @@ Branch pushes (`push`) and `release` events also enter at the top. Because the m
 14. **Evaluation History** - `evaluations.py` stores scores, reasons, iterations for regression detection
 15. **Idempotent Processing** - atomic `try_claim` on the events table; duplicate detection; `pending_review`/`completed`/`failed` status
 16. **Internal Documentation Events** - `documentation.changed`, `documentation.published`, `review.completed` drive knowledge updates and feedback loops
-17. **Multi-Surface Routing / Merged-Only PRs** - push, release, and PR events all route through the `pull_request` surface, but only **merged** PR events are admitted by the PR gate; pushes and releases use their dedicated webhook tasks and are not filtered by the PR-only gate
+17. **Multi-Surface Routing / Merged-Or-Opened PRs** - push, release, and PR events all route through the `pull_request` surface, but only **merged or opened** PR events are admitted by the PR gate; pushes and releases use their dedicated webhook tasks and are not filtered by the PR-only gate
