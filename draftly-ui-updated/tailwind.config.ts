@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import typography from "@tailwindcss/typography";
 const token=(name:string)=>`rgb(var(--${name}) / <alpha-value>)`;
 export default {
   darkMode: ["class"],
@@ -15,5 +16,5 @@ export default {
       }
     }
   },
-  plugins: []
+  plugins: [typography]
 } satisfies Config;

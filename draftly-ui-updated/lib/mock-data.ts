@@ -1,9 +1,219 @@
-export const reviews = [
-  { id:"oauth", title:"OAuth authentication guide", ref:"PR #142", description:"Update authentication documentation based on new refresh token implementation.", repo:"Authly", path:"docs/authentication.md", type:"Documentation update", score:94, evals:6, risk:"Low", updated:"12m ago", status:"Pending" },
-  { id:"redis", title:"Redis caching guide", ref:"Issue #87", description:"Add caching best practices with Redis based on engineering discussion.", repo:"Authly", path:"docs/redis/caching.md", type:"New document", score:78, evals:5, risk:"Medium", updated:"45m ago", status:"Pending" },
-  { id:"limits", title:"API rate limits documentation", ref:"PR #138", description:"Update rate limit section to reflect new tier configuration.", repo:"Authly", path:"docs/api/rate-limits.md", type:"Documentation update", score:65, evals:7, risk:"High", updated:"1h ago", status:"Urgent" },
-  { id:"deploy", title:"Deployment guide", ref:"Release v1.2.0", description:"Update deployment steps for Kubernetes configuration.", repo:"Authly", path:"docs/deployment.md", type:"Documentation update", score:96, evals:8, risk:"Low", updated:"3h ago", status:"Approved" },
-  { id:"legacy", title:"Legacy auth migration guide", ref:"Issue #65", description:"New migration guide for legacy authentication systems.", repo:"Authly", path:"docs/migration/legacy.md", type:"New document", score:82, evals:6, risk:"Medium", updated:"5h ago", status:"Needs changes" },
+export type Review = {
+  id: string;
+  title: string;
+  ref: string;
+  description: string;
+  repo: string;
+  path: string;
+  type: string;
+  score: number;
+  evals: number;
+  risk: string;
+  updated: string;
+  status: string;
+  document: {
+    format: "markdown";
+    originalContent: string;
+    proposedContent: string;
+  };
+};
+
+export const reviews: Review[] = [
+  {
+    id: "oauth",
+    title: "OAuth authentication guide",
+    ref: "PR #142",
+    description: "Update authentication documentation based on new refresh token implementation.",
+    repo: "Authly",
+    path: "docs/authentication.md",
+    type: "Documentation update",
+    score: 94,
+    evals: 6,
+    risk: "Low",
+    updated: "12m ago",
+    status: "Pending",
+    document: {
+      format: "markdown",
+      originalContent: `# OAuth authentication
+
+The API supports OAuth 2.0 authentication using authorization codes.
+
+## Access tokens
+
+Access tokens authenticate API requests and expire after 15 minutes.
+
+The token endpoint returns a new access token.`,
+      proposedContent: `# OAuth authentication
+
+The API supports OAuth 2.0 authentication using authorization codes.
+
+## Access tokens
+
+Access tokens authenticate API requests and expire after 15 minutes.
+
+## Refresh tokens
+
+Refresh tokens obtain a new access token without requiring the user to authenticate again. They have a longer lifetime and can be rotated for enhanced security.
+
+### Request a new access token
+
+Use the \`/oauth/token\` endpoint with the refresh token grant type:
+
+\`\`\`http
+POST /oauth/token
+Content-Type: application/json
+
+{
+  "grant_type": "refresh_token",
+  "refresh_token": "your-refresh-token"
+}
+\`\`\`
+
+The token endpoint returns a new access token and, optionally, a new refresh token.`,
+    },
+  },
+  {
+    id: "redis",
+    title: "Redis caching guide",
+    ref: "Issue #87",
+    description: "Add caching best practices with Redis based on engineering discussion.",
+    repo: "Authly",
+    path: "docs/redis/caching.md",
+    type: "New document",
+    score: 78,
+    evals: 5,
+    risk: "Medium",
+    updated: "45m ago",
+    status: "Pending",
+    document: {
+      format: "markdown",
+      originalContent: "",
+      proposedContent: `# Redis caching
+
+Use Redis for short-lived data that is expensive to calculate but safe to recreate.
+
+## Recommended defaults
+
+- Set an explicit TTL on every cache entry.
+- Prefix keys with the environment and feature name.
+- Treat cache misses as a normal application path.
+- Add jitter to high-volume expiration times.
+
+> Redis is an optimization, not the source of truth.
+
+## Example
+
+\`\`\`python
+await redis.set("production:users:42", payload, ex=300)
+\`\`\``,
+    },
+  },
+  {
+    id: "limits",
+    title: "API rate limits documentation",
+    ref: "PR #138",
+    description: "Update rate limit section to reflect new tier configuration.",
+    repo: "Authly",
+    path: "docs/api/rate-limits.md",
+    type: "Documentation update",
+    score: 65,
+    evals: 7,
+    risk: "High",
+    updated: "1h ago",
+    status: "Urgent",
+    document: {
+      format: "markdown",
+      originalContent: `# API rate limits
+
+All API clients can make up to 100 requests per minute.`,
+      proposedContent: `# API rate limits
+
+Limits are applied per workspace and vary by subscription tier.
+
+| Tier | Requests per minute | Burst limit |
+| --- | ---: | ---: |
+| Starter | 100 | 20 |
+| Pro | 1,000 | 100 |
+| Enterprise | Custom | Custom |
+
+Responses include \`RateLimit-Limit\`, \`RateLimit-Remaining\`, and \`RateLimit-Reset\` headers.
+
+When the limit is exceeded, retry after the number of seconds in the \`Retry-After\` header.`,
+    },
+  },
+  {
+    id: "deploy",
+    title: "Deployment guide",
+    ref: "Release v1.2.0",
+    description: "Update deployment steps for Kubernetes configuration.",
+    repo: "Authly",
+    path: "docs/deployment.md",
+    type: "Documentation update",
+    score: 96,
+    evals: 8,
+    risk: "Low",
+    updated: "3h ago",
+    status: "Approved",
+    document: {
+      format: "markdown",
+      originalContent: `# Deploy Authly
+
+Apply the Kubernetes manifest to your cluster.`,
+      proposedContent: `# Deploy Authly on Kubernetes
+
+This guide deploys Authly with production-ready health checks and resource limits.
+
+## Prerequisites
+
+1. Kubernetes 1.30 or later
+2. A configured \`kubectl\` context
+3. An Authly license secret
+
+## Deploy
+
+\`\`\`bash
+kubectl create namespace authly
+kubectl apply -n authly -f deploy/authly.yaml
+kubectl rollout status -n authly deployment/authly
+\`\`\`
+
+Verify that the readiness endpoint returns a successful response before routing traffic.`,
+    },
+  },
+  {
+    id: "legacy",
+    title: "Legacy auth migration guide",
+    ref: "Issue #65",
+    description: "New migration guide for legacy authentication systems.",
+    repo: "Authly",
+    path: "docs/migration/legacy.md",
+    type: "New document",
+    score: 82,
+    evals: 6,
+    risk: "Medium",
+    updated: "5h ago",
+    status: "Needs changes",
+    document: {
+      format: "markdown",
+      originalContent: "",
+      proposedContent: `# Migrate from legacy authentication
+
+Move applications to Authly without forcing every user to reset their password at once.
+
+## Migration phases
+
+1. Import user identifiers and verified profile data.
+2. Enable just-in-time password migration.
+3. Move active sessions to Authly-issued tokens.
+4. Monitor failed sign-ins before retiring the legacy service.
+
+## Rollback
+
+Keep legacy authentication available until migration metrics meet your acceptance threshold. Do not delete legacy password hashes during the rollback window.
+
+> Test the migration with an internal tenant before enabling it for customers.`,
+    },
+  },
 ];
 
 export const docs = [

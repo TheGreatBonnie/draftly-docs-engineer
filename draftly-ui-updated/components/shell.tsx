@@ -75,7 +75,7 @@ function Navigation({
             <span>{label}</span>
             {label === "Reviews" && (
               <span
-                className={`ml-auto rounded-full px-2 py-0.5 text-[11px] ${active ? "bg-white/15" : "bg-surface-subtle text-foreground-muted"}`}>
+                className={`ml-auto rounded-full px-2 py-0.5 text-[11px] ${active ? "bg-surface text-foreground" : "bg-surface-subtle text-foreground-muted"}`}>
                 12
               </span>
             )}
