@@ -28,20 +28,20 @@ normalize payload → event_type = "pull_request.opened"   → 422 if unhandled
    ▼
 reserve identity: organizations.github_org == repo owner → 422 "not linked" if absent
    ▼
-ROUTE GATE  pull_request.*  that is NOT .merged/.opened  → 200 "skipped, not merged/opened"
+ROUTE GATE  pull_request.*  that is NOT .opened  → 200 "skipped, not opened"
    ▼
 persist jobs row + github_workflows row (run-scoped)
    ▼
 dispatch  RQ "webhooks" queue (github_pr.enqueue)   or  in-process BackgroundTasks
    ▼
-RUNNER GATE  (authoritative) same merged/opened filter  → SKIPPED if other action
+RUNNER GATE  (authoritative) same .opened filter  → SKIPPED if other action
    ▼
 idempotency claim → build per-run graph → run → ReviewGate → pending_review / delivered
 ```
 
-The PR admission gate (only `pull_request.merged` and `pull_request.opened` run the graph) is enforced
+The PR admission gate (only `pull_request.opened` runs the graph) is enforced
 **twice**: at the route edge (`draftly-agent-backend/src/draftly/app/api/routes/github.py:313-321`) and
-authoritatively in the runner (`draftly-agent-backend/src/draftly/workflows/runner.py:155-170`).
+authoritatively in the runner (`draftly-agent-backend/src/draftly/workflows/runner.py:296-304`).
 
 ---
 
@@ -210,7 +210,7 @@ curl -i -X POST http://localhost:8000/api/github/webhook \
 
 **HTTP response:** `200` with `{"status":"pull_request.opened (run_id=$DELIVERY)"}` proves the
 **route gate admitted `.opened`** (a `pull_request.edited`/closed payload instead returns
-`"pull_request.edited (skipped, not merged/opened)"`).
+`"pull_request.edited (skipped, not opened)"`).
 
 **API log (Terminal A):**
 
@@ -265,7 +265,7 @@ With the same `$SIG` mechanism:
 | Test                   | Action                                                     | Expected                                                                  |
 | ---------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------- |
 | Wrong signature        | Send a bogus `X-Hub-Signature-256`                         | **401** `Invalid signature`                                               |
-| Non-admitted PR action | Re-sign a payload with `"action": "edited"`                | **200** `"pull_request.edited (skipped, not merged/opened)"`              |
+| Non-admitted PR action | Re-sign a payload with `"action": "edited"`                | **200** `"pull_request.edited (skipped, not opened)"`                     |
 | Org not linked         | Temporarily `UPDATE organizations SET github_org=NULL ...` | **422** `"GitHub organization 'TheGreatBonnie' is not linked to Draftly"` |
 | Replay                 | Re-POST the **same** `$DELIVERY`                           | Not reprocessed — runner idempotency claim returns `DUPLICATE`            |
 
@@ -434,7 +434,7 @@ real PR), and the run's terminal status becomes `delivered`.
 | `401 Invalid signature`                                        | Wrong/absent `X-Hub-Signature-256` or body changed between signing and POST                  | Recompute the hash over the exact file bytes; use `--data-binary @file`             |
 | `422 GitHub organization '<owner>' is not linked to Draftly`   | No `organizations` row with `github_org = owner`                                             | Step 1.2 (local) or Step 2.3 (`/api/github/link`, real)                             |
 | `422 unhandled` on POST                                        | `X-GitHub-Event` header missing, unknown event type, or malformed payload                    | Ensure `X-GitHub-Event: pull_request` and a valid `pull_request` object             |
-| Response says `(skipped, not merged/opened)`                   | Payload `action` is not `opened`/`merged` (or `pull_request.merged=false` on a merged event) | Use `"action": "opened"`                                                            |
+| Response says `(skipped, not opened)`                         | Payload `action` is not `opened` (e.g. `edited`, `closed`)              | Use `"action": "opened"`                                                            |
 | `workflow_skipped_pr_not_merged` in worker                     | Runner gate rejected the event (defense-in-depth)                                            | Same fix as above; event never reaches the graph                                    |
 | Run stuck at `pending_review`                                  | ReviewGate await (default policy `always`)                                                   | Approve via `POST /api/github/review/<run_id>` or set `STRANDS_REVIEW_POLICY=never` |
 | `github_webhook_dispatch_inprocess` instead of `enqueued`      | Redis/RQ not connected or `RQ_ENABLED=false`                                                 | Start Redis + `make worker-rq`, or accept the in-process fallback                   |
@@ -446,7 +446,7 @@ real PR), and the run's terminal status becomes `delivered`.
 
 ## Quick reference
 
-**Endpoints** (`POST /api` mounted router — `src/draftly/app/api/app.py:60-63`):
+**Endpoints** (`POST /api` mounted router — `src/draftly/app/api/app.py:64-67`):
 
 | Method & path                           | Purpose                                                              |
 | --------------------------------------- | -------------------------------------------------------------------- |
