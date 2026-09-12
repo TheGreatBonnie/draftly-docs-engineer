@@ -302,6 +302,28 @@ psql "$DATABASE_URL" -c "UPDATE organizations SET github_org=NULL WHERE clerk_or
 Goal: open a real PR on `TheGreatBonnie/authly` so GitHub's webhook drives the workflow with actual
 diff, files, and comments — the fully credentialed path.
 
+### Step 2.0 Run the worker WITHOUT the local checkout mount (github grounding)
+
+The Part-1 docker worker mounts `../authly` onto `/tmp/repos/TheGreatBonnie/authly`
+(`docker-compose.redis.yml:25`), so the runner always grounds `local` on that checkout — even for a
+real PR, and the mounted checkout is the base clone, not the PR head. Real-PR runs must instead
+ground `github` (fetch the actual diff via the App installation token). Restart the worker with the
+`docker-compose.realpr.yml` override, which resets `rq-worker.volumes` to none:
+
+```bash
+cd draftly-agent-backend
+docker compose -f docker-compose.redis.yml -f docker-compose.realpr.yml up -d --build rq-worker
+# verify the mount is gone in the merged file:
+docker compose -f docker-compose.redis.yml -f docker-compose.realpr.yml config --format json \
+  | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['services']['rq-worker'].get('volumes'))"
+#   expect: None
+```
+
+Then confirm grounding in the worker log on the next event:
+`grounding_mode ... mode=github repo_dir=None installation_id=157868703` (instead of `mode=local`).
+Requires Docker Compose v2.23+ for the `!reset` tag. Part 1 keeps using the base
+`docker-compose.redis.yml` (with the mount) so its runs still ground `local`.
+
 ### Step 2.1 Expose the webhook endpoint publicly
 
 GitHub must be able to reach the endpoint. For a local backend, tunnel it:

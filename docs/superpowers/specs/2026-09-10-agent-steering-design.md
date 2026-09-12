@@ -125,15 +125,15 @@ The package must depend on stable Strands public APIs. SDK-specific imports and 
 
 Every agent gets a policy, but policies differ by role. Policy selection is explicit and versioned rather than inferred from prompt text.
 
-| Agent role | Deterministic before-tool checks | Model guidance | Human interrupt default |
-| --- | --- | --- | --- |
-| Classifier/router | Validate tool existence, arguments, scope, and read-only access | Disabled by default | Never |
-| Context/research | Enforce repository/project scope, bounded queries, and source requirements | Optional canary | Never for read-only failures; interrupt on scope violation |
-| Analyzer/impact/evaluator | Validate evidence references, limits, and output contract | Optional, bounded | Interrupt on missing required evidence or unsafe access |
-| Writers/changelog/content | Validate evidence linkage, output schema, and mutation intent | Optional, bounded | Interrupt before non-draft mutation |
-| Support/answer writer | Validate tenant scope, sensitive-data rules, and output schema | Optional, bounded | Interrupt on sensitive-data or permission uncertainty |
-| Delivery/notification | Validate destination, authorization, idempotency key, and draft/posted state | Disabled initially | Interrupt before external side effect when checks fail |
-| Internal steering judge | No application tools | Its own structured response only | Not applicable |
+| Agent role                | Deterministic before-tool checks                                             | Model guidance                   | Human interrupt default                                    |
+| ------------------------- | ---------------------------------------------------------------------------- | -------------------------------- | ---------------------------------------------------------- |
+| Classifier/router         | Validate tool existence, arguments, scope, and read-only access              | Disabled by default              | Never                                                      |
+| Context/research          | Enforce repository/project scope, bounded queries, and source requirements   | Optional canary                  | Never for read-only failures; interrupt on scope violation |
+| Analyzer/impact/evaluator | Validate evidence references, limits, and output contract                    | Optional, bounded                | Interrupt on missing required evidence or unsafe access    |
+| Writers/changelog/content | Validate evidence linkage, output schema, and mutation intent                | Optional, bounded                | Interrupt before non-draft mutation                        |
+| Support/answer writer     | Validate tenant scope, sensitive-data rules, and output schema               | Optional, bounded                | Interrupt on sensitive-data or permission uncertainty      |
+| Delivery/notification     | Validate destination, authorization, idempotency key, and draft/posted state | Disabled initially               | Interrupt before external side effect when checks fail     |
+| Internal steering judge   | No application tools                                                         | Its own structured response only | Not applicable                                             |
 
 The baseline behavior is:
 
@@ -263,15 +263,15 @@ Steering events use the existing per-run sequence, database replay, Redis stream
 
 The following matrix is normative:
 
-| Failure | Read-only agent | Side-effecting agent |
-| --- | --- | --- |
-| Deterministic policy violation | `Guide` within limit, then typed failure | `Guide` within limit, then `Interrupt` |
-| Missing/invalid judge result | Deterministic fallback; fail if required evidence is missing | Fail closed; do not authorize the call |
-| Steering persistence failure | Fail the run; do not claim a decision was recorded | Fail closed before tool execution |
-| Event publication failure after audit | Continue if durable audit succeeded; mark publish lag | Continue only if no side effect is pending; otherwise fail/reconcile |
-| Resume conflict or stale worker | Return current state; never duplicate resume | Return current state; require reconciliation if side effect status is unknown |
-| Limit exhausted | Typed recoverable failure | Interrupt or typed failure according to policy |
-| Cancellation/deadline during steering | Stop and persist cancellation | Stop before side effect and persist cancellation |
+| Failure                               | Read-only agent                                              | Side-effecting agent                                                          |
+| ------------------------------------- | ------------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| Deterministic policy violation        | `Guide` within limit, then typed failure                     | `Guide` within limit, then `Interrupt`                                        |
+| Missing/invalid judge result          | Deterministic fallback; fail if required evidence is missing | Fail closed; do not authorize the call                                        |
+| Steering persistence failure          | Fail the run; do not claim a decision was recorded           | Fail closed before tool execution                                             |
+| Event publication failure after audit | Continue if durable audit succeeded; mark publish lag        | Continue only if no side effect is pending; otherwise fail/reconcile          |
+| Resume conflict or stale worker       | Return current state; never duplicate resume                 | Return current state; require reconciliation if side effect status is unknown |
+| Limit exhausted                       | Typed recoverable failure                                    | Interrupt or typed failure according to policy                                |
+| Cancellation/deadline during steering | Stop and persist cancellation                                | Stop before side effect and persist cancellation                              |
 
 All tool calls that can mutate an external system must use existing or added idempotency keys and post-action reconciliation where the provider supports it. An interrupt must happen before the side effect, not after it. If a provider can report an unknown outcome after a timeout, the run enters a reconciliation-required failure state rather than automatically retrying.
 
