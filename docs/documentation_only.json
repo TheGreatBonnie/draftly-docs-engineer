@@ -1,0 +1,61 @@
+[
+  {
+    "name": "documentation",
+    "description": "Golden documentation-authoring cases: pull_request.opened events (built from authly simulation scenarios) whose merged changes require the workflow to update or create docs",
+    "surface": "pull_request",
+    "required_tools": {
+      "context": ["read_file", "list_directory", "git_status", "git_diff", "file_exists"],
+      "research": ["read_file", "git_status", "git_log", "git_diff", "code_search", "file_exists"],
+      "impact": ["semantic_search", "keyword_search", "hybrid_search", "code_search", "ImpactAnalysis"]
+    },
+    "cases": [
+      {
+        "name": "oauth-authentication-add",
+        "input": "PR: add OAuth authentication. The SDK now supports building OAuth authorization URLs and exchanging an authorization code for an access token, with GitHub and Google providers and OAuth-backed login. Documentation does not yet describe the OAuth flow, callback handling, or provider setup.",
+        "expected_output": "OAuth must be documented: how to build an authorization URL, exchange an authorization code for an access token, handle the OAuth callback, configure GitHub and Google providers, and use OAuth-backed login.",
+        "metadata": {
+          "surface": "pull_request",
+          "event_type": "pull_request.merged",
+          "repository": "TheGreatBonnie/authly",
+          "project_id": "proj_demo",
+          "org_id": "org_3IfMDevV4Tg8DLD8Ljc0GG6c2GJ",
+          "repo_dir": "/Applications/Projects/hackathon/draftly-docs-engineer/authly-scenarios/001-oauth-login",
+          "pr_number": 101,
+          "changed_files": [
+            {
+              "path": "src/authly/oauth.py",
+              "change": "added OAuth authorization URL building and authorization-code exchange"
+            },
+            {
+              "path": "src/authly/auth.py",
+              "change": "added OAuth-backed login (exchange code for token, start session)"
+            },
+            {
+              "path": "src/authly/client.py",
+              "change": "added OAuth configuration and client wiring"
+            }
+          ],
+          "evidence": [
+            {
+              "id": "docs/how-to/oauth-authorization-url",
+              "topic": "oauth",
+              "url": "authly/docs/how-to/oauth-authorization-url.md"
+            },
+            {
+              "id": "docs/topics/authentication",
+              "topic": "authentication",
+              "url": "authly/docs/topics/authentication.md"
+            },
+            {
+              "id": "simulation/scenarios/001-oauth-login",
+              "topic": "oauth",
+              "url": "authly/simulation/scenarios/001_add_oauth.md"
+            }
+          ],
+          "expected_tools": ["read_file"],
+          "expected_action": "update"
+        }
+      }
+    ]
+  }
+]
