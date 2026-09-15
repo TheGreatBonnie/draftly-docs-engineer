@@ -2,7 +2,12 @@
 draftly_accessKeys.csv
 
 # Git submodules (registered via .gitmodules) — do not ignore
-# authly/, authly-scenarios/, draftly-agent-backend/, draftly-agent-ui/
+# authly/, draftly-agent-backend/, draftly-agent-ui/
+
+# authly-scenarios/ are local git worktrees of the authly submodule (one per
+# feat/* branch). They are never pooled into the superproject; create them with:
+#   git -C authly worktree add ../authly-scenarios/001-oauth-login feat/001-oauth-login
+/authly-scenarios/
 
 # Other nested repos not yet wired as submodules
 /draftly-agent-frontend/

@@ -34,6 +34,23 @@ Draftly watches GitHub, Slack, and Discord for code changes and developer questi
 
 4. **Open http://localhost:3000**
 
+## Authly scenario worktrees
+
+`authly-scenarios/NNN-*` are not part of the clone. Each directory is a **git worktree
+of the `authly` submodule** checked out on its feature branch (`feat/001-oauth-login`,
+`feat/002-pkce`, … `feat/010-migration-guide`). Materialize them from the root:
+
+```bash
+git -C authly fetch origin
+git -C authly worktree add ../authly-scenarios/001-oauth-login feat/001-oauth-login
+git -C authly worktree add ../authly-scenarios/010-migration-guide feat/010-migration-guide
+```
+
+Repeat the last command for each scenario you need. The scenario content lives on the
+`feat/*` branches of the `authly` repo (reachable through the submodule), so this is
+recoverable on any clone. See [docs/RUN_PR_WORKFLOW.md](docs/RUN_PR_WORKFLOW.md) Part 2
+for how the PR-documentation workflow runs a scenario.
+
 ## Architecture
 
 See [ARCHITECTURE-DIAGRAM.md](ARCHITECTURE-DIAGRAM.md) for the full system overview.
@@ -45,10 +62,10 @@ See [ARCHITECTURE-DIAGRAM.md](ARCHITECTURE-DIAGRAM.md) for the full system overv
 | [docs/README.enhanced.md](docs/README.enhanced.md) | Full project documentation |
 | [draftly-agent-backend/README.md](draftly-agent-backend/README.md) | Backend architecture & API |
 | [draftly-agent-ui/README.md](draftly-agent-ui/README.md) | UI components & routes |
-| [RUN_PR_WORKFLOW.md](RUN_PR_WORKFLOW.md) | How to run the PR documentation workflow |
+| [docs/RUN_PR_WORKFLOW.md](docs/RUN_PR_WORKFLOW.md) | How to run the PR documentation workflow |
 | [docs/docs/index.md](docs/docs/index.md) | Documentation navigation |
 | [authly/](authly/) | Authly benchmark application (submodule) |
-| [authly-scenarios/](authly-scenarios/) | Authly repo snapshots for the scenario datasets |
+| [authly-scenarios/](authly-scenarios/) | Authly scenario git worktrees (create with the one-liner above) |
 
 ## Tech Stack
 
