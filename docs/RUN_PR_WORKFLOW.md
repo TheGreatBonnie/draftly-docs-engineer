@@ -326,12 +326,35 @@ Requires Docker Compose v2.23+ for the `!reset` tag. Part 1 keeps using the base
 
 ### Step 2.1 Expose the webhook endpoint publicly
 
-GitHub must be able to reach the endpoint. For a local backend, tunnel it:
+GitHub must be able to reach the endpoint. For a local backend, run one ngrok tunnel to the
+**frontend** dev server — Next.js rewrites every `/api/*` request to FastAPI (`next.config.ts`), so a
+single tunnel origin serves pages, webhooks, and the GitHub App OAuth handshake:
 
 ```bash
-ngrok http 8000          # → https://<slug>.ngrok.io
-# Webhook URL you will configure: https://<slug>.ngrok.io/api/github/webhook
+ngrok http 3000          # → https://<slug>.ngrok-free.dev
+# Webhook URL you will configure: https://<slug>.ngrok-free.dev/api/github/webhook
+# GitHub App Setup URL:        https://<slug>.ngrok-free.dev/api/github/setup-callback
 ```
+
+Do **not** tunnel directly to `localhost:8000`. It is redundant (the rewrite already proxies `/api`)
+and it breaks the install handshake: the auth cookie is planted on whatever origin serves the app
+pages, and the setup-callback must land on that same origin. The rewrite passes the request body and
+signing headers through unchanged, so `X-Hub-Signature-256` verification is unaffected — the same
+tunnel also serves the Clerk, Slack, and Discord webhooks. See
+`draftly-agent-backend/docs/api/webhooks.md`.
+
+Register the tunnel origin everywhere it must match:
+
+- GitHub App webhook URL → `https://<slug>.ngrok-free.dev/api/github/webhook`
+- GitHub App Setup URL → `https://<slug>.ngrok-free.dev/api/github/setup-callback`
+- Backend `FRONTEND_URL` → `https://<slug>.ngrok-free.dev` (setup-callback redirects land back on the
+  origin that planted the cookie)
+- Backend CORS + Next `allowedDevOrigins`: when the host differs from the hardcoded default, set
+  `ALLOWED_ORIGINS` (draftly-agent-backend) and `ALLOWED_DEV_ORIGINS` (draftly-agent-ui) to the
+  tunnel host, comma-separated.
+
+ngrok's free tier shows a one-time "You are about to visit" interstitial per browser session; click
+through once — later top-level redirects go straight through.
 
 For a deployed backend, use the instance's HTTPS base URL.
 
