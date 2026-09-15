@@ -1,12 +1,11 @@
 # Secrets - never commit
 draftly_accessKeys.csv
 
-# Nested independent git repos (each has its own remote/history)
-/authly/
-/authly-scenarios/
-/draftly-agent-backend/
+# Git submodules (registered via .gitmodules) — do not ignore
+# authly/, authly-scenarios/, draftly-agent-backend/, draftly-agent-ui/
+
+# Other nested repos not yet wired as submodules
 /draftly-agent-frontend/
-/draftly-agent-ui/
 /onboarding-flow-designs/
 
 # Regenerable / generated

@@ -6,6 +6,10 @@ Draftly watches GitHub, Slack, and Discord for code changes and developer questi
 
 ## Quick Start
 
+> **Cloning this repo:** the backend, UI, and authly benchmark are git submodules, so clone with
+> `git clone --recurse-submodules git@github.com:TheGreatBonnie/draftly-docs-engineer.git`
+> (or run `git submodule update --init --recursive` after a plain clone).
+
 1. **Clone and install the backend**
    ```bash
    cd draftly-agent-backend
@@ -43,6 +47,8 @@ See [ARCHITECTURE-DIAGRAM.md](ARCHITECTURE-DIAGRAM.md) for the full system overv
 | [draftly-agent-ui/README.md](draftly-agent-ui/README.md) | UI components & routes |
 | [RUN_PR_WORKFLOW.md](RUN_PR_WORKFLOW.md) | How to run the PR documentation workflow |
 | [docs/docs/index.md](docs/docs/index.md) | Documentation navigation |
+| [authly/](authly/) | Authly benchmark application (submodule) |
+| [authly-scenarios/](authly-scenarios/) | Authly repo snapshots for the scenario datasets |
 
 ## Tech Stack
 

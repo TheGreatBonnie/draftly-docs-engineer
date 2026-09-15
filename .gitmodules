@@ -1,0 +1,12 @@
+[submodule "authly"]
+	path = authly
+	url = https://github.com/TheGreatBonnie/authly.git
+	branch = development
+[submodule "draftly-agent-backend"]
+	path = draftly-agent-backend
+	url = https://github.com/TheGreatBonnie/draftly-agent-backend.git
+	branch = master
+[submodule "draftly-agent-ui"]
+	path = draftly-agent-ui
+	url = git@github.com:TheGreatBonnie/draftly-agent-ui.git
+	branch = main
