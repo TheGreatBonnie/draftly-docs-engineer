@@ -127,3 +127,7 @@ Longer term, recurring support questions, rejected drafts, and knowledge contrad
 Software will continue to change. Draftly’s goal is to make documentation improvement a continuous, measurable engineering process.
 
 **Draftly helps the documentation move with the code.**
+
+When code changes are pushed into a repo, the documentation might become outdated or fail to cover new changes and features. For that reason, developers or docs team is required to find the affected docs, update them, update examples or create new docs for the new features.
+
+However, ensuring docs keep up with the codebase changes can become repetitive and a daunting task. Fortunately, this is where Draftly comes in to help developers keep their docs in sync with the frequent code changes.
