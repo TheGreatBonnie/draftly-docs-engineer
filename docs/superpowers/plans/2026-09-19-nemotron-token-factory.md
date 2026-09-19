@@ -125,20 +125,20 @@
 - [x] Run against real Token Factory account; write `docs/hackathon/nebius-token-factory-probes.md`; each model passes or the profile mapping is revised (spec §Probe-first gate). **Findings:** ultra id corrected to `nvidia/Nemotron-3-Ultra-550b-a55b` (404 otherwise); `NebiusTokenFactoryModel.format_request` drops empty `tools: []` (Token Factory vLLM 400). All 4 endpoints pass 5/5/4/4/1 probes.
 
 ### Step 7 — Reindex script
-- [ ] `scripts/reindex_embeddings.py`: read all 1536-dim rows (`memory_embeddings`, `embeddings`, `episodes`, `procedures` migrations 003/015/028/029); chunk; embed via TF Qwen at 1536; idempotent `(content_hash, model, dims)` key; atomic per-row swap; summary (rows re-embedded, failures, cost).
-- [ ] Verification query (fixed seed queries, recall comparison) noted in the probe report.
+- **SKIPPED (user, 2026-09-19):** `scripts/reindex_embeddings.py`: read all 1536-dim rows (`memory_embeddings`, `embeddings`, `episodes`, `procedures` migrations 003/015/028/029); chunk; embed via TF Qwen at 1536; idempotent `(content_hash, model, dims)` key; atomic per-row swap; summary (rows re-embedded, failures, cost).
+- **SKIPPED (user, 2026-09-19):** Verification query (fixed seed queries, recall comparison) noted in the probe report.
 
 ### Step 8 — Docs + evidence
-- [ ] `.env.example` nebius block; README reproduce steps + hackathon architecture section + role→model cost table + config reference.
-- [ ] Makefile `probe-token-factory` target (optional).
-- [ ] One real GitHub→draft→review run in staging-like local setup; every `model_invocations` row shows `provider=nebius_token_factory` + Nemotron/Qwen id (demo trace).
+- [x] `.env.example` nebius block; README reproduce steps + hackathon architecture section + role→model cost table + config reference. **Also wired `EMBEDDING_DIMENSIONS` through `_resolve_dimensions()` (default 1536) to honour the spec variable.**
+- [x] Makefile `probe-token-factory` target (optional).
+- **SKIPPED (user, 2026-09-19):** One real GitHub→draft→review run in staging-like local setup; every model invocation row shows `provider=nebius_token_factory` + Nemotron/Qwen id (demo trace). Note: no `model_invocations` table exists; the evidence surface would have been `routing_decisions` (`selected_model`, `provider`). Environment had Docker/Redis down and a shared Neon DB, so this was deferred.
 
 ## Verification / Definition of Done
 
-- [ ] Every `Router.route()` offline decision under the TF gate resolves to `provider == "nebius_token_factory"` for all 19 roles in `ROLE_TO_TASK_TYPE`.
-- [ ] `decision.model_name` matches the spec tier per task type (reconciliation #1 determinism).
-- [ ] Original test suites green (no regressions to default-gate REASONING → widened set, openrouter-first embedding ranking preserved).
-- [ ] Live probe report exists; each of the 3 Nemotron models + Qwen embedder passes at 1536.
-- [ ] Reindex script idempotent (rerun safe); verification query shows recall preserved.
-- [ ] Demo trace shows TF provenance end-to-end.
-- [ ] README + config reference committed; spec edits re-committed.
+- [x] Every `Router.route()` offline decision under the TF gate resolves to `provider == "nebius_token_factory"` for all 19 roles in `ROLE_TO_TASK_TYPE`.
+- [x] `decision.model_name` matches the spec tier per task type (reconciliation #1 determinism).
+- [x] Original test suites green — final backend suite **2030 passed / 6 skipped / 2 failed**; the 2 failures are the pre-existing `tests/evaluation/test_online.py` real-GitHub snapshot tests (fail on base `9f9fb5b`). No regression to default-gate REASONING → widened set or openrouter-first embedding ranking.
+- [x] Live probe report exists; all 3 Nemotron models + the Qwen embedder pass at 1536 (`docs/hackathon/nebius-token-factory-probes.md`).
+- **SKIPPED (user, 2026-09-19):** Reindex script idempotent (rerun safe); verification query shows recall preserved.
+- **SKIPPED (user, 2026-09-19):** Demo trace shows TF provenance end-to-end.
+- [x] README + config reference committed; spec edits re-committed.
