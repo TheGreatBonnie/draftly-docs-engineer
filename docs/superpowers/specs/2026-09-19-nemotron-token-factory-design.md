@@ -8,14 +8,14 @@
 
 Draftly will be powered entirely by NVIDIA Nemotron models served through Nebius Token Factory, with Qwen3-Embedding-8B as the embedding tier. A new `nebius_token_factory` provider implements Draftly's existing `ModelProvider` abstraction, is registered into the existing model registry, and is the *only* admissible provider under the `DRAFTLY_ENABLED_PROVIDERS` gate. Role-to-model routing is capability-balanced: Nemotron Nano handles fast/everyday calls, Nemotron Super handles research and evaluation, and Nemotron Ultra handles documentation generation and review.
 
-This spec is standalone: it covers the provider integration, provider gate, Nemotron routing profile, embedding switch to `Qwen/Qwen3-Embedding-8B` (dimension-truncated to 1024), a probe-first qualification gate, failure handling, reindex, testing, and hackathon evidence. It does not depend on the separate Nebius production-deployment spec.
+This spec is standalone: it covers the provider integration, provider gate, Nemotron routing profile, embedding switch to `Qwen/Qwen3-Embedding-8B` (dimension-truncated to 1536), a probe-first qualification gate, failure handling, reindex, testing, and hackathon evidence. It does not depend on the separate Nebius production-deployment spec.
 
 ## Goals
 
 - Add a native `nebius_token_factory` provider that implements the existing `ModelProvider` abstraction.
 - Power all Draftly agent roles with Nemotron models through Token Factory.
 - Ensure every LLM invocation records `provider=nebius_token_factory` and a Nemotron or Qwen model id.
-- Move the embedding tier to `Qwen/Qwen3-Embedding-8B` at 1024 dimensions with a one-time, idempotent corpus reindex.
+- Move the embedding tier to `Qwen/Qwen3-Embedding-8B` at 1536 dimensions with a one-time, idempotent corpus reindex.
 - Qualify every model with live probes (tool calling, structured output, context size, latency, cost) before it becomes a routing default.
 - Preserve Draftly's evidence grounding, evaluation loops, human review, and GitHub delivery.
 - Produce demonstrable hackathon evidence: probe report, routing summary, README section, and an end-to-end run trace.
@@ -43,7 +43,7 @@ New file `src/draftly/models/providers/nebius_token_factory.py`.
     - `api_key` from provider config (never logged)
     - `model` from `ModelConfig.model_id`
     - `temperature`/`max_tokens` passthrough from `ModelConfig`
-- `create_embedder(config)` — an OpenAI-compatible embeddings client hitting `/v1/embeddings` with model `Qwen/Qwen3-Embedding-8B` and `dimensions=1024`.
+- `create_embedder(config)` — an OpenAI-compatible embeddings client hitting `/v1/embeddings` with model `Qwen/Qwen3-Embedding-8B` and `dimensions=1536` (matches the existing `VECTOR(1536)` stores; no schema change).
 
 ### Configuration
 
@@ -57,14 +57,15 @@ Additions to `src/draftly/app/config.py`:
   - `NEMOTRON_SUPER_MODEL_ID` (default `nvidia/nemotron-3-super-120b-a12b`)
   - `NEMOTRON_ULTRA_MODEL_ID` (default `nvidia/NVIDIA-Nemotron-3-Ultra-550b-a55b`)
   - `EMBEDDING_MODEL_ID` (default `Qwen/Qwen3-Embedding-8B`)
-  - `EMBEDDING_DIMENSIONS` (default `1024`)
+  - `EMBEDDING_DIMENSIONS` (default `1536`)
   - `DRAFTLY_ENABLED_PROVIDERS` (existing gate; set to `nebius_token_factory`)
 - Model ids remain deployment configuration, not hard-coded architecture.
 
 ### Registration and gate
 
-- When `"nebius_token_factory"` is present in `DRAFTLY_ENABLED_PROVIDERS`, the registry registers exactly one provider plus the four role models and the embedding model, all with `provider="nebius_token_factory"`.
-- No other provider is registered when the gate is active. Exclusion happens at registration time, not call time.
+- When `"nebius_token_factory"` is present in `DRAFTLY_ENABLED_PROVIDERS`, the existing gate restricts `Router.route()` to the `nebius_token_factory` provider: the four role models and the embedding model all carry `provider="nebius_token_factory"`, and the router's provider filter eliminates every other candidate at route time.
+- The registry registers every provider unconditionally (existing behavior, unchanged interface); the gate is enforced through the existing `enabled_providers` set that flows into `Router.route()`. With the gate active, every successful invocation records `provider=nebius_token_factory` and a Nemotron or Qwen model id.
+- For embeddings, the same isolation is achieved by configuring only `NEBIUS_TOKEN_FACTORY_API_KEY`; the embedding router registers only providers with configured keys.
 
 ### Nemotron routing profile
 
@@ -84,7 +85,7 @@ Rationale per the track guidance: Nano/small models keep the app responsive and 
 
 ### Embeddings
 
-- Model `Qwen/Qwen3-Embedding-8B` at `dimensions=1024`.
+- Model `Qwen/Qwen3-Embedding-8B` at `dimensions=1536` (Qwen3-Embedding-8B supports `dimensions` truncation via the API; 1536 matches the existing `VECTOR(1536)` stores).
 - Existing vector space is replaced by a one-time, idempotent reindex (Section "Embedding reindex"). No schema/column change; cosine-similarity index configuration unchanged.
 - The same retry policy applies to embedder calls; a failed embed degrades indexing but never blocks the workflow.
 
@@ -97,7 +98,7 @@ Rationale per the track guidance: Nano/small models keep the app responsive and 
 - Context size: long prompt at the advertised context (262K/256K/1024K) completes within budget.
 - Latency/cost: TTFT and token counts recorded.
 
-For embeddings, `Qwen/Qwen3-Embedding-8B` at `dimensions=1024` returns 1024-dim vectors for a mixed corpus and cosine similarity behaves.
+For embeddings, `Qwen/Qwen3-Embedding-8B` at `dimensions=1536` returns 1536-dim vectors for a mixed corpus and cosine similarity behaves.
 
 Each model passes or the profile mapping is revised before implementation proceeds. Results are written to `docs/hackathon/nebius-token-factory-probes.md`.
 
@@ -124,7 +125,7 @@ Each model passes or the profile mapping is revised before implementation procee
 
 - Reads all content rows currently embedded (docs, repo evidence, memory) from pgvector-backed stores.
 - Chunks changed content; idempotent by a `(content_hash, model_id, dims)` key.
-- Calls `Qwen/Qwen3-Embedding-8B` via the Token Factory client at 1024 dims; writes new vectors; deletes old-model vectors atomically per row after successful insert.
+- Calls `Qwen/Qwen3-Embedding-8B` via the Token Factory client at 1536 dims; writes new vectors; deletes old-model vectors atomically per row after successful insert.
 - Emits a summary: rows re-embedded, failures, and cost.
 
 A verification query compares retrieval quality on a fixed set of seed queries before and after (recall of expected chunks), recorded in the probe report.
@@ -133,15 +134,15 @@ A verification query compares retrieval quality on a fixed set of seed queries b
 
 ### Unit tests (stubbed client, no network)
 
-- Provider construction: required `api_key`, correct `base_url`, `dimensions=1024` flow to embedder, `temperature`/`max_tokens` passthrough.
-- Gate: with `DRAFTLY_ENABLED_PROVIDERS=nebius_token_factory`, the registry contains only that provider; every role's `Router.route()` returns a TF decision; the embedding resolves to `Qwen/Qwen3-Embedding-8B` at 1024.
+- Provider construction: required `api_key`, correct `base_url`, `dimensions=1536` flow to embedder, `temperature`/`max_tokens` passthrough.
+- Gate: with `DRAFTLY_ENABLED_PROVIDERS=nebius_token_factory`, the registry registers the TF provider and its four role models; every role's `Router.route()` returns a TF decision; the embedding resolves to `Qwen/Qwen3-Embedding-8B` at 1536.
 - Retry/backoff: timeouts, 429s, 5xx trigger retries with jitter; exhaustion raises classified errors.
 - Fallback chains: Nano→Super→Ultra, Super→Ultra, Ultra→Super; never downgrades below capability need.
 
 ### Contract tests (recorded/erased HTTP)
 
 - OpenAI-compatible chat + tool-call request/response shapes as Strands expects.
-- `/v1/embeddings` request (model, `dimensions=1024`) and response (vector length).
+- `/v1/embeddings` request (model, `dimensions=1536`) and response (vector length).
 
 ### Live probes
 
