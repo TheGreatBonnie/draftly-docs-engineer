@@ -95,34 +95,34 @@
 ## Task List
 
 ### Step 0 — Commit plan-level reconciliations
-- [ ] Correct spec's §Configuration "app/config.py" claim → factory.py inline pattern (reconciliation #4); amend spec routing-table wording for "four role models" (reconciliation #5) if unclear; commit spec edits + this plan.
+- [x] Correct spec's §Configuration "app/config.py" claim → factory.py inline pattern (reconciliation #4); amend spec routing-table wording for "four role models" (reconciliation #5) if unclear; commit spec edits + this plan.
 
 ### Step 1 — Provider module
-- [ ] TDD: `test_nebius_token_factory.py` — missing API key raises `ValueError`; `create_model` returns an `OpenAIModel` with expected `base_url=...nebius.com/v1`, model_id, temperature/max_tokens passthrough; `create_embedder` returns `OpenAICompatibleEmbedder` seeded with `dimensions=1536` and the Qwen default model id.
-- [ ] Implement `draftly/models/providers/nebius_token_factory.py`.
-- [ ] Export from `providers/__init__.py`.
+- [x] TDD: `test_nebius_token_factory.py` — missing API key raises `ValueError`; `create_model` returns an `OpenAIModel` with expected `base_url=...nebius.com/v1`, model_id, temperature/max_tokens passthrough; `create_embedder` returns `OpenAICompatibleEmbedder` seeded with `dimensions=1536` and the Qwen default model id.
+- [x] Implement `draftly/models/providers/nebius_token_factory.py`.
+- [x] Export from `providers/__init__.py`.
 
 ### Step 2 — Policies + router data
-- [ ] Add `nebius_token_factory` to `KNOWN_PROVIDERS`; assert no `validate_fallback_chain` breakage.
-- [ ] Add `TaskType.RESEARCH: frozenset({"research"})` to `TASK_TYPE_CAPABILITIES`; confirm existing routes (requesty research-model has `research`) unaffected.
+- [x] Add `nebius_token_factory` to `KNOWN_PROVIDERS`; assert no `validate_fallback_chain` breakage.
+- [x] Add `TaskType.RESEARCH: frozenset({"research"})` to `TASK_TYPE_CAPABILITIES`; confirm existing routes (requesty research-model has `research`) unaffected.
 
 ### Step 3 — Factory registration
-- [ ] `PROVIDER_CLASSES` entry + unconditional TF provider registration in `build_model_router`.
-- [ ] Register 3 Nemotron models with capability/cost/context from the table above (nano/super/ultra).
-- [ ] Embedding: `OpenAICompatibleEmbedder.dimensions` param + forward; `_FakeOpenAI` update; `build_embedding_router` TF entry at priority 40 + Qwen default + 1536.
+- [x] `PROVIDER_CLASSES` entry + unconditional TF provider registration in `build_model_router`.
+- [x] Register 3 Nemotron models with capability/cost/context from the table above (nano/super/ultra).
+- [x] Embedding: `OpenAICompatibleEmbedder.dimensions` param + forward; `_FakeOpenAI` update; `build_embedding_router` TF entry at priority 40 + Qwen default + 1536.
 
 ### Step 4 — Gate + determinism tests (every role)
-- [ ] With `enabled_providers={"nebius_token_factory"}` and `NEBIUS_TOKEN_FACTORY_API_KEY` set, for **every** `(role, task_type)` in `ROLE_TO_TASK_TYPE`: `router.route(RoutingRequest(task_type=t, context_tokens=1000))` → `decision.provider == "nebius_token_factory"`, and model name matches expected tier (fast/delivery/support→nano; research/evaluation→super; docgen/docreview→ultra).
-- [ ] Embedding gate test: only `NEBIUS_TOKEN_FACTORY_API_KEY` configured → `build_embedding_router().registry.list_embedding_models()` yields exactly the TF embedder at 1536/Qwen.
-- [ ] Widen the 3 default-gate assertions in `test_factory_enabled_providers.py` to include `nebius_token_factory`.
+- [x] With `enabled_providers={"nebius_token_factory"}` and `NEBIUS_TOKEN_FACTORY_API_KEY` set, for **every** `(role, task_type)` in `ROLE_TO_TASK_TYPE`: `router.route(RoutingRequest(task_type=t, context_tokens=1000))` → `decision.provider == "nebius_token_factory"`, and model name matches expected tier (fast/delivery/support→nano; research/evaluation→super; docgen/docreview→ultra).
+- [x] Embedding gate test: only `NEBIUS_TOKEN_FACTORY_API_KEY` configured → `build_embedding_router().registry.list_embedding_models()` yields exactly the TF embedder at 1536/Qwen.
+- [x] Widen the 3 default-gate assertions in `test_factory_enabled_providers.py` to include `nebius_token_factory`.
 
 ### Step 5 — Verify no regressions
-- [ ] `uv run pytest` in `draftly-agent-backend` — full suite green (unit, incl. existing router/policies/embedding/env-example tests).
-- [ ] Lint/typecheck per repo (ruff/mypy as configured).
+- [x] `uv run pytest` in `draftly-agent-backend` — full suite green (unit, incl. existing router/policies/embedding/env-example tests). **Note:** 2 pre-existing failures in `tests/evaluation/test_online.py` (confirmed failing on base `9f9fb5b`; they snapshot a real GitHub diff/release notes, unrelated to this work). 2012 passed / 6 skipped otherwise.
+- [x] Lint/typecheck per repo (ruff/mypy as configured). ruff clean on all touched files; `mypy src` has a pre-existing "source file found twice" error from the editable-install layout (reproduces on base).
 
 ### Step 6 — Probe script + report
-- [ ] `tests/scripts/probe_token_factory.py` live sweep (chat+tool calling, structured output, context size at advertised windows, TTFT/cost; embeddings at 1536) mirroring `probe_models.py`.
-- [ ] Run against real Token Factory account; write `docs/hackathon/nebius-token-factory-probes.md`; each model passes or the profile mapping is revised (spec §Probe-first gate).
+- [x] `tests/scripts/probe_token_factory.py` live sweep (chat+tool calling, structured output, context size at advertised windows, TTFT/cost; embeddings at 1536) mirroring `probe_models.py`.
+- [x] Run against real Token Factory account; write `docs/hackathon/nebius-token-factory-probes.md`; each model passes or the profile mapping is revised (spec §Probe-first gate). **Findings:** ultra id corrected to `nvidia/Nemotron-3-Ultra-550b-a55b` (404 otherwise); `NebiusTokenFactoryModel.format_request` drops empty `tools: []` (Token Factory vLLM 400). All 4 endpoints pass 5/5/4/4/1 probes.
 
 ### Step 7 — Reindex script
 - [ ] `scripts/reindex_embeddings.py`: read all 1536-dim rows (`memory_embeddings`, `embeddings`, `episodes`, `procedures` migrations 003/015/028/029); chunk; embed via TF Qwen at 1536; idempotent `(content_hash, model, dims)` key; atomic per-row swap; summary (rows re-embedded, failures, cost).
