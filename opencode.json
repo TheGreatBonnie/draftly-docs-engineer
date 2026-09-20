@@ -12,9 +12,9 @@
       "url": "https://mcp.copilotkit.ai/sse",
       "enabled": true
     },
-    "langchain": {
+    "tavily-docs": {
       "type": "remote",
-      "url": "https://docs.langchain.com/mcp",
+      "url": "https://docs.tavily.com/mcp",
       "enabled": true
     },
     "clerk": {
