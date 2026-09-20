@@ -547,3 +547,10 @@ The guiding principle is:
 > Treat the eleven-page result as one documentation change set, but treat each page or related page bundle as a separate unit of execution.
 
 That preserves a coherent final PR while avoiding one enormous, slow, fragile writer invocation.
+
+## Status
+
+Implemented as of 2026-09-20 per `docs/superpowers/specs/2026-09-20-writer-fanout-design.md`.
+The graph now runs `impact → document (fan-out) → review → evaluate → changelog → deliver`;
+writer execution is one isolated Agent per task under bounded concurrency with per-task
+retry, and progress streams via `task_progress` envelopes.
