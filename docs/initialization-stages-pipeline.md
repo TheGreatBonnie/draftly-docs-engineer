@@ -165,11 +165,11 @@ Progress escapes while the sync is *still running* via a **dirty-flag + backgrou
 
 **What it does.** `run_knowledge_construction()` recalls up to 500 synced chunks and uses an **LLM to extract structured knowledge** from each:
 
-- `facts` → stored as `Knowledge` entries (batched: one embed + one transaction per batch of 50 chunks).
+- `facts` → stored as `Knowledge` entries in small persistence batches (one embedding batch and one transaction per flush).
 - `relationships` → typed edges (`IMPLEMENTS`, `DOCUMENTED_BY`, `AFFECTS`, `DERIVED_FROM`) added to the **documentation graph** (`context.docgraph`). Invalid/inferred types fall back to `DERIVED_FROM` and are logged.
 - `procedures` → enqueued as `procedure_pattern` memory candidates for later curation.
 
-The LLM is called under bounded concurrency (`LLM_MAX_CONCURRENCY`, default 8, env-configurable), with a 10s per-chunk timeout, and — critically — **one `Agent` is reused for all calls** instead of constructing a provider-backed agent per call (which would redo expensive setup hundreds of times).
+Chunks from the same page are packed into extraction groups of at most four chunks and 6,000 content characters. Each request gets a fresh Strands `Agent`, so unrelated chunks do not accumulate in its conversation history. Calls use bounded concurrency (`LLM_MAX_CONCURRENCY`, default 8); completed groups are persisted and reported without waiting for a 50-chunk extraction batch. Invalid grouped output is retried per chunk. The per-call timeout defaults to disabled (`CHUNK_TIMEOUT_SECONDS=0`), while the group and storage ceilings default to 600 seconds.
 
 **Benefits**
 

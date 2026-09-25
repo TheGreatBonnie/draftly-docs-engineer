@@ -7,14 +7,15 @@
       "enabled": true,
       "headers": {}
     },
-    "copilotkit": {
-      "type": "remote",
-      "url": "https://mcp.copilotkit.ai/sse",
-      "enabled": true
-    },
+
     "tavily-docs": {
       "type": "remote",
       "url": "https://docs.tavily.com/mcp",
+      "enabled": true
+    },
+    "nebius-docs": {
+      "type": "remote",
+      "url": "https://docs.nebius.com/mcp",
       "enabled": true
     },
     "clerk": {
